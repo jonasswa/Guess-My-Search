@@ -21,6 +21,11 @@ socket.on('change_content', function(params) {
   $( "#content" ).load(params.url);
 });
 
+function joinRoom(roomName, myName){
+  socket.emit('')
+
+}
+
 function triggerThread(){
   console.log('Client triggered trigger_Thread')
   socket.emit('trigger_Thread');

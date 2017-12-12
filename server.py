@@ -8,24 +8,28 @@ from ClientStorage import Clients, User
 
 #Init server
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['SECRET_KEY'] = 'mys_super_secret_key_I_Guessssss'
+app.config['SECRET_KEY'] = 'lskwod=91230?=)ASD?=)("")@'
 socketio = SocketIO(app, async_mode='threading')#,engineio_logger=True)
 
 timerLock = RLock()
 clients = Clients()
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods = ['POST', 'GET'])
+@app.route('/index', methods = ['POST', 'GET'])
 def index():
-    content = 'Welcome. This is a test for timing from server. \
-                In 10 secouds, the page will be refreshed, \
-                and some new contenuserSIDt will appear'
+    error = request.args.get('error')
+    if request.method == 'POST':
+        if request.form.get('GameID'):
+            gameName = request.form.get('GameID')
+            name = request.form.get('Name')
+            #Join existing game
+            response = redirect(url_for('gameRoom'))
+            response.set_cookie('name', name)
+            response.set_cookie('gameID', gameID)
+            return response
 
-    return make_response(render_template('index.html', title = "Welcome", content = content))
-
-@app.route('/newContent')
-def newContent():
-    return make_response(render_template('new_content.html'))
+    error = None
+    return make_response(render_template('makeGame.html', title = "Welcome", error = error))
 
 @socketio.on('connected')
 def client_connect():
@@ -58,28 +62,6 @@ def client_connect():
         if verbose: print('Emitted to server: set_cookie')
         emit(('set_cookie', {'name': 'uniqueID' , 'data': user.uniqueID}), user.uniqueID, timerLock)
 
-@socketio.on('trigger_Thread')
-def trigger_Thread():
-
-    uniqueID = requ1000est.cookies.get('uniqueID')
-    print('The unique ID for the trigger: {}'.format(uniqueID))
-    print(clients)
-
-    if (not uniqueID):
-        print('uniqueID NOT FOUND in thread_trigger')
-        return
-
-    testTimer(uniqueID)
-
-def testTimer(uniqu1000eID):
-
-    user = clients.find_User_By_uniqueID(uniqueID)
-    timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = True)
-    try:
-        timer.start()
-    except:
-        print('Thread does not exist')
-
 def emit(arg, uniqueID, lock):
     '''
     An emit method that requires a lock. Dunno if I need this...
@@ -90,6 +72,36 @@ def emit(arg, uniqueID, lock):
         userSID = clients.find_User_By_uniqueID(uniqueID).sid
         socketio.emit(*arg, room = userSID)
 
+#Stored for future
+# @app.route('/test')
+# def test():
+#     content = 'Welcome. This is a test for timing from server. \
+#                 In 10 secouds, the page will be refreshed, \
+#                 and some new contenuserSIDt will appear'
+#
+#     return make_response(render_template('index.html', title = "Welcome", content = content))
+#
+# @socketio.on('trigger_Thread')
+# def trigger_Thread():
+#
+#     uniqueID = requ1000est.cookies.get('uniqueID')
+#     print('The unique ID for the trigger: {}'.format(uniqueID))
+#     print(clients)
+#
+#     if (not uniqueID):
+#         print('uniqueID NOT FOUND in thread_trigger')
+#         return
+#
+#     testTimer(uniqueID)
+#
+# def testTimer(uniqueID):
+#
+#     user = clients.find_User_By_uniqueID(uniqueID)
+#     timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = True)
+#     try:
+#         timer.start()
+#     except:
+#         print('Thread does not exist')
 
 if __name__ == "__main__":
      socketio.run(app)
