@@ -20,3 +20,8 @@ socket.on('change_content', function(params) {
   console.log('Changing content')
   $( "#content" ).load(params.url);
 });
+
+function triggerThread(){
+  console.log('Client triggered trigger_Thread')
+  socket.emit('trigger_Thread');
+}

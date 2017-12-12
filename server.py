@@ -19,7 +19,7 @@ clients = Clients()
 def index():
     content = 'Welcome. This is a test for timing from server. \
                 In 10 secouds, the page will be refreshed, \
-                and some new content will appear'
+                and some new contenuserSIDt will appear'
 
     return make_response(render_template('index.html', title = "Welcome", content = content))
 
@@ -29,47 +29,67 @@ def newContent():
 
 @socketio.on('connected')
 def client_connect():
-    verbose = True
+    verbose = False
     '''
     I need to identify the user. If the user reloads, the session ID will change.
     A unique user-key is provided for each new user, and the session ID is updated
     when the user reconnects. The unique ID is stored in a cookie.
-    '''
-    if verbose: print ('Connected with ID', str(request.sid))
 
-    if request.cookies.get('uniqueID'):
-        uniqueID = request.cookies.get('uniqueID')
+    '''
+    uniqueID = request.cookies.get('uniqueID')
+    if verbose: print('\nUnique ID before update: {}'.format(uniqueID))
+
+    if uniqueID:
+        if verbose: print('Unique ID cookie found')
         user = clients.find_User_By_uniqueID(uniqueID)
         if user:
-            if verbose: print('User exists')
-            if user.sid != request.sid:
-                user.update_Sid = request.sid
-                if verbose: print ('Had to update sid')
+            if verbose: print('User found')
+            if request.sid != user.sid:
+                user.sid = request.sid
+                print('Updated the SID')
         else:
-            if verbose: print('User does not exist. But the cookie does')
-            user = clients.add_User(request.sid)
-            emit(('set_cookie', {'name': 'uniqueID' , 'data': user.uniqueID}), request.sid, timerLock)
-            if verbose: print ('Made new user')
+            user = clients.add_User(sid=request.sid)
+            if verbose: print('User created')
+            user.uniqueID = uniqueID
+            if verbose: print('Unique ID updated')
     else:
-        user = clients.add_User(request.sid)
+        if verbose: print('Made a new user')
+        user = clients.add_User(sid=request.sid)
+        if verbose: print('Emitted to server: set_cookie')
         emit(('set_cookie', {'name': 'uniqueID' , 'data': user.uniqueID}), user.uniqueID, timerLock)
-        if verbose: print ('Made new user')
 
+@socketio.on('trigger_Thread')
+def trigger_Thread():
 
-    testTimer(request.cookies.get('uniqueID'))
+    uniqueID = requ1000est.cookies.get('uniqueID')
+    print('The unique ID for the trigger: {}'.format(uniqueID))
+    print(clients)
 
-def testTimer(uniqueUser):
-        timer = WaitThread(10, emit, (('change_content', {'url': '/newContent'}), uniqueUser, timerLock), verbose = True)
+    if (not uniqueID):
+        print('uniqueID NOT FOUND in thread_trigger')
+        return
+
+    testTimer(uniqueID)
+
+def testTimer(uniqu1000eID):
+
+    user = clients.find_User_By_uniqueID(uniqueID)
+    timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = True)
+    try:
         timer.start()
+    except:
+        print('Thread does not exist')
 
-def emit(arg, userUniqueID, lock):
+def emit(arg, uniqueID, lock):
     '''
     An emit method that requires a lock. Dunno if I need this...
     TODO: Find out if i need the lock.
     '''
     with lock:
-        userSID = clients.find_User_By_uniqueID(userUniqueID)
+        print ('Did an emit')
+        userSID = clients.find_User_By_uniqueID(uniqueID).sid
         socketio.emit(*arg, room = userSID)
+
 
 if __name__ == "__main__":
      socketio.run(app)
