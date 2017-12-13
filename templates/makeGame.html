@@ -5,6 +5,8 @@
   <script src="{{ url_for('static', filename='notyf.min.js') }}" type="text/javascript"></script>
   <script src="{{ url_for('static', filename='makeGameHandler.js') }}" type="text/javascript"></script>
   <script type="text/javascript" src="//code.jquery.com/jquery-3.2.1.min.js"></script>
+  <script src="{{ url_for('static', filename='misc.js') }}" type="text/javascript"></script>
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.slim.js"></script>
 
   <!-- CSS FILES -->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
@@ -29,7 +31,7 @@
           </tr>
           <tr>
             <td><input name="NameMake" type="text" placeholder="Your name..." pattern="[ÆØÅæøåA-Za-z1-9]{3,10}"></td>
-            <td><input name="GameNameMake" type="text" placeholder="Game name..." pattern="[ÆØÅæøåA-Za-z1-9]{5,20}"></td>
+            <td><input name="GameNameMake" type="text" placeholder="Game name..." pattern="[ÆØÅæøåA-Za-z1-9]{4,20}"></td>
           </tr>
           <tr>
               <td><p><br><small>Nr. of rounds</small></p></td><td><p><small><br>Time (s) per round</small></p></td>
@@ -56,7 +58,7 @@
           </tr>
           <tr>
             <td><input name="NameJoin" type="text" placeholder="Your name..." pattern="[ÆØÅæøåA-Za-z1-9]{3,10}"></td>
-            <td><input name="GameNameJoin" type="text" placeholder="Game name..."pattern="[ÆØÅæøåA-Za-z1-9]{5,20}"></td>
+            <td><input name="GameNameJoin" type="text" placeholder="Game name..."pattern="[ÆØÅæøåA-Za-z1-9]{4,20}"></td>
           </tr>
       </table>
       <td><input type="button" value="Submit" onclick="joinGame()"></td>
@@ -76,6 +78,7 @@
       </i></small></p><td>
     </tr>
   </table>
-
+  <!-- SOCKET HANDLER INCUDED WHEN PAGE IS DONE -->
+  <script src="{{ url_for('static', filename='socketHandler.js') }}" type="text/javascript"></script>
 </body>
 </html>

@@ -19,6 +19,7 @@ body {
   overflow: hidden;
 }
 
+
 input[type=text] {
   text-align: center;
   font-family: Courier, monospace;
@@ -62,7 +63,6 @@ button {
 .header {
   position: fixed;
   padding: 2px;
-
   left: 0;
   top: 0px;
   width: 100%;
@@ -83,7 +83,7 @@ button {
 
 }
 
-.footerTable{
+.footerAndHeaderTable{
   width: 100%;
   table-layout : fixed;
 }

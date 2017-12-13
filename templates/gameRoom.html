@@ -1,23 +1,58 @@
 <html>
 <head>
+  <meta charset="utf-8"/>
   <title>{{ title }}</title>
   <!-- SCRIPTS -->
+  <script src="{{ url_for('static', filename='copyToClip.js') }}" type="text/javascript"></script>
   <script src="{{ url_for('static', filename='notyf.min.js') }}" type="text/javascript"></script>
   <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.slim.js"></script>
   <script type="text/javascript" src="//code.jquery.com/jquery-3.2.1.min.js"></script>
 
   <!-- CSS FILES -->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='notyf.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
 </head>
 <body>
   <!-- INIT A NOTYF -->
   <script type="text/javascript" charset="utf-8">var notyf = new Notyf();</script>
 
+  <!-- THE HEADER -->
+  <div id="header" class = "header">
+    <table class = "footerAndHeaderTable">
+      <tr>
+        <td class="alnleft">Game name: <p id = gameName>{{ gameName }}<p></td>
+        <td>TITLE</td>
+        <td></td>
+      </tr>
+    </table>
+
+  </div>
+
+  <!-- THE CLIENT LIST -->
+  <div id = "playerList" class = "playerList">
+  </div>
+
   <!-- THE ACTUAL CONTENT -->
   <div id = "content">
   </div>
 
+  <!-- THE FOOTER -->
+  <div id="footer" class = "footer">
+    <table class = "footerAndHeaderTable">
+      <tr>
+        <td class="alnleft"><button onclick="copyToClipboard('#gameName'); notyf.confirm('Game name copied to clipboard');">Copy game name to clipboard</button></td>
+        <td>CHAT</td>
+        <td></td>
+      </tr>
+    </table>
+
   <!-- SOCKET HANDLER INCUDED WHEN PAGE IS DONE -->
   <script src="{{ url_for('static', filename='socketHandler.js') }}" type="text/javascript"></script>
+
+  <script type="text/javascript" charset="utf-8">
+    $("#content").load("/gameRoomContent");
+    refreshPlayerList();
+  </script>
+
 </body>
-</head>
+</html>

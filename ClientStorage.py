@@ -11,8 +11,11 @@ class User:
         self.nrOfSidUpdates = 0
         self.uniqueID = uuid.uuid4().hex
         self.lock = RLock()
+
         self.nrOfThreadsSpawned = 0
         self.nrOfThreadsAllowed = 1
+        self.gameObject = None
+        self.playerObject = None
 
     def add_Name(self, name):
         self.name = name
