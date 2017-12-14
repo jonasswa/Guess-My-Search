@@ -1,15 +1,19 @@
 <!-- THE CONTENT OF THE LOBBY -->
 
-<table>
-  <tr>
-    <td>
-      <p id ="info" clas = "info">
-        Welcome to the lobby.
-      </p>
-    </td>
-    <td>
-      <input type="checkbox" id = "readyChbx" onclick="toggleReady()">checkbox</checkbox>
-    </td>
-  <tr>
-</table>
-?
+<p>
+  <h2 class = "centering">Lobby</h2><br>
+  <table class = "gameInfo">
+    <tr>
+      <th>Game name</th><th>Number of rounds</th><th>Time per round (s)</th>
+    </tr>
+    <tr>
+      <td>{{ gameName }}</td><td>{{ nrOfRounds}}</td><td>{{ timePerRound }}</td>
+    </tr>
+  </table>
+  <br><br>
+  <div class = "readyBox">
+    Please check if ready:<br><br>
+    <input type="checkbox" onclick="toggleReady()"></checkbox>
+  </div>
+
+</p>

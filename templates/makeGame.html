@@ -15,7 +15,7 @@
 <body>
   <!-- INIT A NOTYF -->
   <script type="text/javascript" charset="utf-8">var notyf = new Notyf();</script>
-
+  <div class="makeGameContent">
   {% if error != None %}
   <h3>ERROR: {{ error }}</h3>
   {% endif %}
@@ -85,6 +85,7 @@
       </i></small></p><td>
     </tr>
   </table>
+  </div>
   <!-- SOCKET HANDLER INCUDED WHEN PAGE IS DONE -->
   <script src="{{ url_for('static', filename='socketHandler.js') }}" type="text/javascript"></script>
 

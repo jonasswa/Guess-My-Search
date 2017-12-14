@@ -1,6 +1,6 @@
 html, body {
   height: 100%;
-  text-align:center;
+  /*text-align:center;*/
   font-family: Courier, monospace;
   background-color: #F7F7F7;
 
@@ -19,6 +19,7 @@ body {
   overflow: hidden;
 }
 
+
 input[type=text]{
   font-family: Courier, monospace;
 }
@@ -36,9 +37,14 @@ input[type=password]{
   text-align: center;
 }
 
-td {
+.makeGameContent{
   text-align: center;
 }
+
+.makeGameContent td {
+  text-align: center;
+}
+
 button {
   font-family: Courier, monospace;
   cursor: pointer;
@@ -53,7 +59,46 @@ button {
   width: 65px;
 
 }
+
+.centering{
+  text-align: center;
+  margin: 0 auto;
+}
+
+.gameRoomContent{
+  width: 600px;
+  padding: 10px;
+}
+
+.gameInfo{
+  padding: 4px;
+  border: 1px solid;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.gameInfo td{
+  padding: 4px;
+  border: 1px solid;
+}
+.gameInfo th{
+  padding: 4px;
+  border: 1px solid;
+}
+
+.readyBox
+{
+  margin: 0 auto;
+  border: 1px dotted;
+  width: 120px;
+  padding: 10px;
+  text-align: center;
+  align-items: center;
+}
+
+
 .playerList {
+  text-align: center;
   width: 200px;
   border: 1px solid;
   /*min-height: 40px;*/
@@ -77,7 +122,6 @@ button {
   text-align: center;
 }
 
-
 .footer {
   position: fixed;
   padding: 10px;
@@ -88,10 +132,14 @@ button {
   text-align: center;
 
 }
-
 .footerAndHeaderTable{
   width: 100%;
-  table-layout : fixed;
+  table-layout: fixed;
+  text-align: center;
+}
+
+.footerAndHeaderTable td {
+
 }
 
 .alnleft {

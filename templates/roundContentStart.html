@@ -1,0 +1,22 @@
+<h2 class ="centering">Round {{ roundNr }}/{{ nrOfRounds }}</h2>
+
+<small>TIME LEFT: <span id="timeLeft">00:{{ timePerRound }}</span></small>
+<br>
+<br>
+<p>Type your search string</p>
+<br>
+<input id ="searchString" type="text" class = "mediumbox" placeholder="Your search string" pattern="(.*?){4,100}">
+<br>
+<p>Type what you think gooogle will suggest for your current search string</p>
+<br>
+<input id ="suggestion" class = "bigbox" type="text" placeholder="Your suggestion" pattern="(.*?){4,100}">
+<br>
+<div class = "checkBox">
+  <p>Toggle if ready: <input type="checkbox" onclick = "toggleReady()"></p>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+      var t = {{ timePerRound }} - 1;
+      var display = document.querySelector('#timeLeft');
+      startTimer(t, display);
+</script>

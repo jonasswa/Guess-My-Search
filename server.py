@@ -1,11 +1,12 @@
 from flask_socketio import SocketIO
 from flask import Flask, make_response, request, session
 from flask import render_template, session, url_for, redirect
+
 from threading import RLock
 
-from TimerSpawner import WaitThread
+from threading import Thread
+from time import sleep
 from ClientStorage import Clients, User
-
 from gameObjects import Game, GameContainter, Player, ChatMmsg
 
 #Init server
@@ -14,6 +15,7 @@ app.config['SECRET_KEY'] = 'lskwod=91230?=)ASD?=)("")@'
 socketio = SocketIO(app, async_mode='threading')
 
 timerLock = RLock()
+asyncLock = RLock()
 clients = Clients()
 
 games = GameContainter()
@@ -97,10 +99,34 @@ def gameRoomContent():
     user = clients.find_User_By_uniqueID(uniqueID)
 
     if userNotComplete(user, verbose = False):
-         return redirect(url_for('index') + '?error=User not in game')
+         return 'ERROR: Something strange happened. Please leave game and rejoin'
 
-    if (not user.gameObject.gameStarted):
-        return render_template('lobbyContent.html')
+    nrOfRounds = user.gameObject.nrOfRounds
+    timePerRound = user.gameObject.timePerRound
+    gameName = user.gameObject.gameName
+    roundNr = user.gameObject.currentRound
+
+    if (user.gameObject.get_Stage() == 'lobby'):
+        return render_template('lobbyContent.html',
+                                gameName = gameName,
+                                nrOfRounds = nrOfRounds,
+                                timePerRound = timePerRound)
+
+    elif (user.gameObject.get_Stage() == 'roundStart'):
+        return render_template('roundContentStart.html',
+                                timePerRound = timePerRound,
+                                roundNr = roundNr,
+                                nrOfRounds = nrOfRounds)
+
+    elif (user.gameObject.get_Stage() == 'roundSupply'):
+        user.gameObject.spawnedThread = None
+        return render_template('roundContentSupply.html')
+
+    elif (user.gameObject.get_Stage() == 'roundEnd'):
+            return render_template('roundContentEnd.html')
+
+    elif (user.gameObject.get_Stage() == 'gameSummary'):
+            return render_template('gameContentSummary.html')
 
 @app.route('/playerList')
 def playerList():
@@ -160,8 +186,62 @@ def leaveGame():
 
 @socketio.on('toggle_ready')
 def toggleReady(msg):
-    
-    pass
+    verbose = False
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+
+    if (not user):
+        if verbose: print('No user found when toggling ready')
+        return
+
+    player = user.playerObject
+
+    if (not player):
+        if verbose: print('No player found for the user/client.')
+
+    player.ready = not player.ready
+    game = player.gameObject
+
+    #A game object will always exist if there is a playerObject
+    emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
+    playersReady = game.all_Players_Ready()
+
+    if playersReady and game.gameStarted == False and not game.spawnedThread:
+        game.gameStarted = True
+        game.reset_Players_Ready()
+        emitToGame(game = game, arg = ('change_content', {'url':'/gameRoomContent'}), lock = timerLock)
+        emitToGame(game = game, arg = ('client_message', {'msg':'Game started. Have fun!'}), lock = timerLock)
+
+        #Start timer
+        game.spawnedThread = RoundTimer(int(game.timePerRound), user)
+        game.spawnedThread.start()
+        return
+
+    if playersReady and game.get_Stage() == 'roundStart':
+        if verbose: print ('Round ended by users')
+        user.gameObject.end_Round()
+        if verbose: print('Current stage of game is: {}'.format(user.gameObject.get_Stage()))
+        emitToGame(game = user.gameObject, arg = ('change_content', {'url':'/gameRoomContent'}), lock = timerLock)
+        emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
+        return
+
+
+class RoundTimer(Thread):
+
+    def __init__(self, timeToWait, user):
+         Thread.__init__(self)
+         self.timeToWait = timeToWait
+         self.user = user
+
+    def run(self):
+        print('Thread started')
+        sleep(self.timeToWait)
+        self.user.gameObject.end_Round()
+        print('Thread stopped')
+        emitToGame(game = self.user.gameObject, arg = ('change_content', {'url':'/gameRoomContent'}), lock = timerLock)
+        emitToGame(game = self.user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
+        return
+
 
 @socketio.on('handle_chat')
 def handleChat(msg):
@@ -190,7 +270,7 @@ def client_connect():
     when the user reconnects. The unique ID is stored in a cookie.
 
     '''
-    print('Someone connected with the IP: {}'.format(request.remote_addr))
+    if verbose: print('Someone connected with the IP: {}'.format(request.remote_addr))
     uniqueID = request.cookies.get('uniqueID')
     if verbose: print('\nUnique ID before update: {}'.format(uniqueID))
 
@@ -243,38 +323,6 @@ def userNotComplete(user, verbose = False):
         return True
     else:
         return False
-
-
-#Stored for future
-# @app.route('/test')
-# def test():
-#     content = 'Welcome. This is a test for timing from server. \
-#                 In 10 secouds, the page will be refreshed, \
-#                 and some new contenuserSIDt will appear'
-#
-#     return make_response(render_template('index.html', title = "Welcome", content = content))
-#
-# @socketio.on('trigger_Thread')
-# def trigger_Thread():
-#
-#     uniqueID = request.cookies.get('uniqueID')
-#     print('The unique ID for the trigger: {}'.format(uniqueID))
-#     print(clients)
-#
-#     if (not uniqueID):
-#         print('uniqueID NOT FOUND in thread_trigger')
-#         return
-#
-#     testTimer(uniqueID)
-#
-# def testTimer(uniqueID):
-#
-#     user = clients.find_User_By_uniqueID(uniqueID)
-#     timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = False)
-#     try:
-#         timer.start()
-#     except:
-#         print('Thread does not exist')
 
 if __name__ == "__main__":
      socketio.run(app, debug = True)

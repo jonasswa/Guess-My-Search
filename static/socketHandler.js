@@ -52,7 +52,7 @@ socket.on('refresh_Player_List', function(){
 });
 
 socket.on('update_chat', function(){
-  console.log('Chatmsg made by user. Refreshing chat')
+  console.log('Chatmsg made by user. Refreshing chat');
   $("#loadChat").load("/chatContent");
 });
 
@@ -61,19 +61,24 @@ function leaveGame(){
   window.location.replace('/leave_Game');
 }
 function refreshPlayerList(){
-  console.log('Refreshed the player list')
+  console.log('Refreshed the player list');
   $( "#playerList" ).load('/playerList');
 }
 
 function sendChat(){
-  console.log('Sending chat...')
-  var msg = document.getElementById("chatText").value
-  socket.emit('handle_chat', msg)
+  console.log('Sending chat...');
+  var msg = document.getElementById("chatText").value;
   document.getElementById("chatText").value = '';
+  if (!msg){
+    notyf.alert("You can't send an empty chat message");
+    return;
+  }
+  socket.emit('handle_chat', msg);
+
 }
 
 function triggerThread(){
-  console.log('Client triggered trigger_Thread')
+  console.log('Client triggered trigger_Thread');
   socket.emit('trigger_Thread');
 }
 
@@ -83,5 +88,5 @@ function toggleReady(){
   toggled = !toggled;
   console.log('Toggled. Value of the checkbox is: ' + String(toggled));
 
-  socket.emit('toggle_ready', toggled)
+  socket.emit('toggle_ready', toggled);
 }

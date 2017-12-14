@@ -1,6 +1,6 @@
 from ClientStorage import User
 from time import gmtime, strftime
-
+from threading import RLock
 class Player:
 
     def __init__(self, name, userObject, gameObject):
@@ -36,13 +36,39 @@ class Game:
 
     def __init__(self, gameName, timePerRound=10, nrOfRounds=5):
         self.timePerRound = timePerRound
-        self.nrOfRounds = nrOfRounds
-
-        self.currentRound = 0
+        self.nrOfRounds = int(nrOfRounds)
+        self.currentRound = 1
+        self._roundCycle = ['roundStart', 'roundSupply', 'roundEnd']
+        self._stageIndex = 0
         self.gameStarted = False
         self.gameName = gameName
         self.players = []
         self.chatMessages = []
+        self.lock = RLock()
+
+        self.spawnedThread = None
+
+
+    def go_To_Next_Stage(self):
+        self._stageIndex += 1
+        if (self._stageIndex >= len(self._roundCycle)):
+            self._stageIndex = 0
+            self.currentRound += 1
+
+    def end_Round(self):
+        with self.lock:
+            if self.get_Stage()=='roundStart':
+                self._stageIndex += 1
+                if (self._stageIndex >= len(self._roundCycle)):
+                    self._stageIndex = 0
+                    self.currentRound += 1
+
+    def get_Stage(self):
+        if self.gameStarted == False:
+            return 'lobby'
+        if self.currentRound >= self.nrOfRounds:
+            return 'gameSummary'
+        return self._roundCycle[self._stageIndex]
 
     def get_Player_Names(self):
         ret = []
@@ -63,6 +89,18 @@ class Game:
 
             ret.append(entry)
         return ret
+
+    def reset_Players_Ready(self):
+        for player in self.players:
+            player.ready = False
+        return
+
+    def all_Players_Ready(self):
+        for player in self.players:
+            if (not player.ready):
+                return False
+
+        return True
 
     def add_Chat_Msg(self, chatMsg, playerName):
         self.chatMessages.insert(0, ChatMmsg(msg=chatMsg, player=playerName))
