@@ -38,7 +38,11 @@ class User:
                 self.nrOfThreadsSpawned -= 1
                 return True
 
-
+    def resetUser(self):
+        self.gameObject=None
+        self.playerObject=None
+        self.name=''
+        
 class Clients:
     def __init__(self):
         self.users = []

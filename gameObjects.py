@@ -1,4 +1,5 @@
 from ClientStorage import User
+from time import gmtime, strftime
 
 class Player:
 
@@ -6,11 +7,30 @@ class Player:
         self.name = name
         self.gameObject = gameObject
         self.userObject = userObject
+        self.ready = False
 
         userObject.name = name
         userObject.gameObject = gameObject
         userObject.playerObject = self
 
+    def __str__(self):
+        return self.name
+
+class ChatMmsg:
+
+    def __init__(self, msg, player):
+        self.msg = msg
+        if len(self.msg)>800:
+            self.msg = self.msg[0:10]
+
+        self.player = str(player)
+        self.timeStamp = strftime("%H:%M:%S", gmtime())
+
+    def __str__(self):
+        return self.player + ': ' + self.msg
+
+    def get_Player_And_Msg(self):
+        return self.player, self.msg
 
 class Game:
 
@@ -22,16 +42,36 @@ class Game:
         self.gameStarted = False
         self.gameName = gameName
         self.players = []
+        self.chatMessages = []
 
-    def getPlayerNames(self):
+    def get_Player_Names(self):
         ret = []
         for player in self.players:
             ret.append(player.name)
         return ret
 
+    def get_Player_Names_And_Status(self):
+        ret = []
+        for player in self.players:
+
+            if player.ready:
+                entry = '[✓] '
+            else:
+                entry = '[✗] '
+
+            entry += player.name
+
+            ret.append(entry)
+        return ret
+
+    def add_Chat_Msg(self, chatMsg, playerName):
+        self.chatMessages.insert(0, ChatMmsg(msg=chatMsg, player=playerName))
+        if len(self.chatMessages)>10:
+            del self.chatMessages[-1]
+
     def add_Player(self, name, userObject, verbose = False):
         if self.find_Player_By_Name(name):
-            if verbose: print('In GAME:add_Player: player EXISTS')
+            if verbose: print('In GAME:add_Player: player name EXISTS')
             return None
 
         if verbose: print('In GAME:add_Player: A new player was made')
@@ -39,8 +79,8 @@ class Game:
         self.players.append(player)
         return player
 
-    def remove_Player(self, name, verbose = False):
-        player = self.find_Player_By_Name(name)
+    def remove_Player_By_User_Object(self, userObj, verbose = False):
+        player = self.find_Player_By_User_Object(userObj)
 
         if (not player):
             if verbose: print('In GAME:remove_Player: player not found')
@@ -54,6 +94,12 @@ class Game:
             if p.name == name:
                 return p
 
+        return None
+
+    def find_Player_By_User_Object(self, userObj):
+        for p in self.players:
+            if p.userObject == userObj:
+                return p
         return None
 
 class GameContainter:
@@ -80,6 +126,13 @@ class GameContainter:
                 return game
         if verbose: print('In GameContainter:find_Game_By_Name: Game NOT found')
         return None
+
+    def removeGame(self,game, verbose = False):
+        try:
+            self._games.remove(game)
+            if verbose: print('In ClientList:removeGame: Removed game')
+        except:
+            if verbose: print('In ClientList:removeGame: Could not find game in clientList')
 
     def __str__(self):
         ret = ''

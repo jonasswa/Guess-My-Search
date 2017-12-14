@@ -1,0 +1,15 @@
+<!-- <table>
+  {% for i in range(chatMsg|length) %}
+  <tr>
+    <td>{{ players[i] }}: {{ chatMsg[i] }}</td>
+  </tr>
+  {% endfor %}
+</table> -->
+<p>
+{% if chatMsg|length == 0 %}
+No chat messages yet<br><br>
+{% endif %}
+{% for i in range(chatMsg|length) %}
+<u>{{ players[i] }}</u>: {{ chatMsg[i] }}<br><br>
+{% endfor %}
+</p>

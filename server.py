@@ -6,12 +6,12 @@ from threading import RLock
 from TimerSpawner import WaitThread
 from ClientStorage import Clients, User
 
-from gameObjects import Game, GameContainter, Player
+from gameObjects import Game, GameContainter, Player, ChatMmsg
 
 #Init server
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = 'lskwod=91230?=)ASD?=)("")@'
-socketio = SocketIO(app, async_mode='threading')#,engineio_logger=True)
+socketio = SocketIO(app, async_mode='threading')
 
 timerLock = RLock()
 clients = Clients()
@@ -24,12 +24,12 @@ games = GameContainter()
 def index():
     verbose = False
     error = request.args.get('error')
-    return make_response(render_template('makeGame.html', title = "Welcome", error = error))
+    return make_response(render_template('makeGame.html', title = "Welcome", cool = 123, error = error))
 
 @app.route('/gameRoom', methods = ['POST', 'GET'])
 def gameRoom():
     global games
-    verbose = True
+    verbose = False
     argumentsMakeGame = ['name', 'gameName', 'nrOfRounds', 'time', 'newGame']
     argumentsJoinGame = ['name', 'gameName', 'newGame']
 
@@ -65,7 +65,7 @@ def gameRoom():
             if argumentsJoinGame:
                 return redirect(url_for('index') + '?error=Not enough arguments when joining the game')
 
-            print('In server:gameRoom() Searching for game: {}'.format(data['gameName']))
+            if verbose: print('In server:gameRoom() Searching for game: {}'.format(data['gameName']))
             #Check if game exists
             game = games.find_Game_By_Name(data['gameName'], verbose)
             if (not game):
@@ -80,13 +80,12 @@ def gameRoom():
 
             if verbose: print('In server:gameRoom() game created and user/player added')
             sendMessageToGame(game, '{} joined the game'.format(data['name']))
+            emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
 
 
     else:
-        print('USER IN GAME')
-        #emit(('client_message', {'msg': 'You are in a game'}), user.uniqueID, timerLock)
-    print(games)
-    print(user.gameObject.gameName)
+        if verbose: print('User alreade in game')
+
     error = None
     return make_response(render_template('gameRoom.html', title = "Game Room", gameName = user.gameObject.gameName, error = error))
 
@@ -101,8 +100,7 @@ def gameRoomContent():
          return redirect(url_for('index') + '?error=User not in game')
 
     if (not user.gameObject.gameStarted):
-        playerList = user.gameObject.getPlayerNames()
-        return render_template('lobbyContent.html', playerList = playerList)
+        return render_template('lobbyContent.html')
 
 @app.route('/playerList')
 def playerList():
@@ -112,10 +110,76 @@ def playerList():
     if userNotComplete(user, verbose = False):
         return redirect(url_for('index') + '?error=User not in game')
 
-    playerList = user.gameObject.getPlayerNames()
+    playerList = user.gameObject.get_Player_Names_And_Status()
     if verbose: print('Got {} players'.format(len(playerList)))
     return render_template('playerList.html', playerList = playerList)
 
+@app.route('/chatContent')
+def chatContent():
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    if userNotComplete(user, verbose = False):
+        return redirect(url_for('index') + '?error=User not in game')
+    chat = user.gameObject.chatMessages
+    msgs = []
+    players = []
+
+    for msg in chat:
+        player, msg = msg.get_Player_And_Msg()
+        msgs.append(str(msg))
+        players.append(str(player))
+    if players:
+        players.reverse()
+        msgs.reverse()
+
+    return render_template('chat.html', players = players, chatMsg = msgs)
+
+
+@app.route('/leave_Game')
+def leaveGame():
+    verbose = True
+
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    if (not user):
+        if verbose: print('No user')
+        return redirect(url_for('index'))
+    game = user.gameObject
+    game.remove_Player_By_User_Object(user)
+    name = user.playerObject.name
+    user.resetUser()
+
+    if len(game.players)<1:
+        games.removeGame(game=game, verbose = verbose)
+    else:
+        emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
+        emitToGame(game = game, arg = ('client_warning',{'msg': name+' left the game'}), lock = timerLock)
+    print (len(games._games))
+
+    return redirect(url_for('index'))
+
+@socketio.on('toggle_ready')
+def toggleReady(msg):
+    
+    pass
+
+@socketio.on('handle_chat')
+def handleChat(msg):
+    #update_chat
+    verbose = False
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    if (not user):
+        if verbose: print('No user')
+        return redirect(url_for('index'))
+    game = user.gameObject
+    if (not game):
+        if verbose: print('No game found when handling chat')
+        return
+
+    game.add_Chat_Msg(chatMsg=msg, playerName=user.playerObject.name)
+
+    emitToGame(game=game, arg=('update_chat',{}), lock=timerLock)
 
 @socketio.on('connected')
 def client_connect():
@@ -126,6 +190,7 @@ def client_connect():
     when the user reconnects. The unique ID is stored in a cookie.
 
     '''
+    print('Someone connected with the IP: {}'.format(request.remote_addr))
     uniqueID = request.cookies.get('uniqueID')
     if verbose: print('\nUnique ID before update: {}'.format(uniqueID))
 
@@ -146,11 +211,15 @@ def client_connect():
         if verbose: print('Made a new user')
         user = clients.add_User(sid=request.sid)
         if verbose: print('Emitted to server: set_cookie')
-        emit(('set_cookie', {'name': 'uniqueID' , 'data': user.uniqueID}), user.uniqueID, timerLock)
+        emit(arg=('set_cookie', {'name': 'uniqueID' , 'data': user.uniqueID}), uniqueID = None, lock = timerLock, user= user)
 
 def sendMessageToGame(game, msg):
     for player in game.players:
         emit(arg = ('client_message', {'msg': msg}), uniqueID = None, lock = timerLock, user= player.userObject)
+
+def emitToGame(arg, game, lock):
+    for player in game.players:
+        emit(arg = arg, uniqueID = None, lock = lock, user = player.userObject)
 
 def emit(arg, uniqueID, lock, user = None):
     '''
@@ -174,6 +243,7 @@ def userNotComplete(user, verbose = False):
         return True
     else:
         return False
+
 
 #Stored for future
 # @app.route('/test')
@@ -200,11 +270,11 @@ def userNotComplete(user, verbose = False):
 # def testTimer(uniqueID):
 #
 #     user = clients.find_User_By_uniqueID(uniqueID)
-#     timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = True)
+#     timer = WaitThread(2, emit, (('change_content', {'url': '/newContent'}), uniqueID, timerLock), user.update_Thread_Number, verbose = False)
 #     try:
 #         timer.start()
 #     except:
 #         print('Thread does not exist')
 
 if __name__ == "__main__":
-     socketio.run(app)
+     socketio.run(app, debug = True)
