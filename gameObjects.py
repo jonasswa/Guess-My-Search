@@ -1,6 +1,17 @@
 from ClientStorage import User
 from time import gmtime, strftime
 from threading import RLock
+from utilslib import getAutoComplete
+
+class Entry:
+
+    def __init__(self, searchString, autoComplete, playerObject):
+        self.searchString = searchString
+        self.autoComplete = autoComplete
+        self.playerObject = playerObject
+        self.googleAutocompletes = getAutoComplete(search_input=searchString)
+
+
 class Player:
 
     def __init__(self, name, userObject, gameObject):
@@ -8,10 +19,17 @@ class Player:
         self.gameObject = gameObject
         self.userObject = userObject
         self.ready = False
+        self.points = 0
 
         userObject.name = name
         userObject.gameObject = gameObject
         userObject.playerObject = self
+
+        self.entry = None
+
+    def set_Entry(self, searchString, autoComplete):
+        self.entry = Entry(searchString, autoComplete, self)
+
 
     def __str__(self):
         return self.name
@@ -45,7 +63,7 @@ class Game:
         self.players = []
         self.chatMessages = []
         self.lock = RLock()
-
+        self.roundEnded = False
         self.spawnedThread = None
 
 
@@ -54,10 +72,12 @@ class Game:
         if (self._stageIndex >= len(self._roundCycle)):
             self._stageIndex = 0
             self.currentRound += 1
+            self.roundEnded = False
 
     def end_Round(self):
         with self.lock:
             if self.get_Stage()=='roundStart':
+                self.roundEnded = True
                 self._stageIndex += 1
                 if (self._stageIndex >= len(self._roundCycle)):
                     self._stageIndex = 0
@@ -68,6 +88,7 @@ class Game:
             return 'lobby'
         if self.currentRound >= self.nrOfRounds:
             return 'gameSummary'
+            self._stageIndex = 0
         return self._roundCycle[self._stageIndex]
 
     def get_Player_Names(self):

@@ -184,6 +184,25 @@ def leaveGame():
 
     return redirect(url_for('index'))
 
+@socketio.on('submit_entry')
+def collectData(msg):
+    verbose = True
+    if verbose: print ('Entry reveived by the server')
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    if verbose: print ('User retrieved')
+    if (not user):
+        if verbose: print('No user found when collecting the data')
+        return
+    if user.playerObject.entry:
+        if verbose: print('User already submitted.')
+        return
+
+    if verbose: print ('Setting entry for user')
+    user.playerObject.set_Entry(msg['searchString'], msg['suggestion'])
+    if verbose: print('Got entry')
+
+
 @socketio.on('toggle_ready')
 def toggleReady(msg):
     verbose = False
@@ -221,7 +240,7 @@ def toggleReady(msg):
         if verbose: print ('Round ended by users')
         user.gameObject.end_Round()
         if verbose: print('Current stage of game is: {}'.format(user.gameObject.get_Stage()))
-        emitToGame(game = user.gameObject, arg = ('change_content', {'url':'/gameRoomContent'}), lock = timerLock)
+        emitToGame(game = user.gameObject, arg = ('round_End', {}), lock = timerLock)
         emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
         return
 
@@ -234,11 +253,13 @@ class RoundTimer(Thread):
          self.user = user
 
     def run(self):
-        print('Thread started')
+
         sleep(self.timeToWait)
+        if self.user.gameObject.roundEnded:
+            #This works. It's a pointer :D Pointers are nice!
+            return
         self.user.gameObject.end_Round()
-        print('Thread stopped')
-        emitToGame(game = self.user.gameObject, arg = ('change_content', {'url':'/gameRoomContent'}), lock = timerLock)
+        emitToGame(game = self.user.gameObject, arg = ('round_End', {'url':'/gameRoomContent'}), lock = timerLock)
         emitToGame(game = self.user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
         return
 

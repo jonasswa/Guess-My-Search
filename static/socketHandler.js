@@ -56,6 +56,17 @@ socket.on('update_chat', function(){
   $("#loadChat").load("/chatContent");
 });
 
+socket.on('round_End', function(){
+  console.log('The round has ended. Sending data to server');
+  var searchString = 'test';//document.getElementById('searchString').value;
+  var suggestion = 'test';//document.getElementById('autoComplete').value;
+
+  socket.emit('submit_entry', {searchString: searchString, suggestion: suggestion});
+
+  $( "#content" ).load("/gameRoomContent");
+
+});
+
 function leaveGame(){
   console.log('Leaving the game');
   window.location.replace('/leave_Game');
