@@ -120,11 +120,14 @@ class Game:
         self.entries.append(entry)
         self.nrOfEntry += 1
 
-    def get_Search_Strings(self):
+    def get_Search_Strings(self, playerObject):
         ret = []
 
         for entry in self.entries:
-            ret.append(entry.searchString)
+            if (entry.playerObject == playerObject):
+                ret.append(None)
+            else:
+                ret.append(entry.searchString)
 
         return ret
 

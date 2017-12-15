@@ -124,10 +124,11 @@ def gameRoomContent():
         game.reset_Players_Ready()
 
         emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
-
+        print('GameContent:')
+        print(game.get_Search_Strings(user.playerObject))
         return render_template('roundContentSupply.html',
                                 nrOfPlayers = game.get_Nr_Of_Players(),
-                                searchStrings = game.get_Search_Strings(),
+                                searchStrings = game.get_Search_Strings(user.playerObject),
                                 nrOfEntries = game.nrOfEntry)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
@@ -266,9 +267,9 @@ class RoundTimer(Thread):
     def run(self):
 
         sleep(self.timeToWait)
-        if self.user.gameObject.roundEnded:
-            #This works. It's a pointer :D Pointers are nice!
+        if (not self.user.gameObject) or (self.user.gameObject.roundEnded):
             return
+
         self.user.gameObject.end_Round()
         emitToGame(game = self.user.gameObject, arg = ('round_End', {'url':'/gameRoomContent'}), lock = timerLock)
         emitToGame(game = self.user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
@@ -339,7 +340,7 @@ def emit(arg, uniqueID, lock, user = None):
     TODO: Find out if i need the lock.
     '''
     verbose = False
-    
+
     with lock:
         if verbose: print ('Did an emit')
         if (not user):

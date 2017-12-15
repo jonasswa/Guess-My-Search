@@ -2,17 +2,29 @@
   {% if nrOfPlayers != nrOfEntries %}
   <p>Collecting entries, please wait...</p><br>
   <img src="{{ url_for('static', filename='loading.gif') }}" alt = "loading..." width: "128px" height="128px"></img>
+  {% else %}
+  <h3>Please fill in your autocomplete for each search string</h3>
   {% endif %}
   <table class="centering">
     {% for i in range(nrOfEntries) %}
+    {% if searchStrings[i] %}
     <tr>
-      <td>{{ searchStrings[i] }}</td>
+      <td class = 'alnleft'>Seartch string: <i></td><td><b>{{ searchStrings[i] }} {{ i }}</b></i></td>
     </tr>
     <tr>
-      <td><input type="text" id = "autoComplete_{{ i }}" placeholder="Your autocomplete"></td>
+      <td class = 'alnleft'>Your autocomplete: </td><td><input type="text" id = "autoComplete_{{ i }}" placeholder="Your autocomplete"></td><br>
     </tr>
     <tr>
+      <td>........................</td><td>........................</td>
     </tr>
+    {% else %}
+    <div id = "autoComplete_{{ i }}"></div>
+    {% endif %}
     {% endfor %}
   </table>
+  <div class = "readyBox">
+    Please check if ready:<br><br>
+    <input type="checkbox" onclick="toggleReady()"></checkbox>
+  </div>
+  <!-- <button onclick="collectSupply({{ nrOfEntries }})"></button> -->
 </div>

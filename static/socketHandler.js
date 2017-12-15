@@ -72,14 +72,27 @@ socket.on('refresh_div_content', function(params){
 
 socket.on('round_End', function(){
   console.log('The round has ended. Sending data to server');
-  var searchString = 'test';//document.getElementById('searchString').value;
-  var suggestion = 'test';//document.getElementById('autoComplete').value;
+  var searchString = document.getElementById('searchString').value;
+  var suggestion = document.getElementById('autoComplete').value;
 
   socket.emit('submit_entry', {searchString: searchString, suggestion: suggestion});
 
   $( "#content" ).load("/gameRoomContent");
 
 });
+
+socket.on('supply_End', function(args){
+  console.log('The supply has ended. Sending data to server');
+  var data = collectSupply(nrOfEntries);
+
+  socket.emit('submit_entry', {searchString: searchString, suggestion: suggestion});
+
+  $( "#content" ).load("/gameRoomContent");
+
+});
+
+
+
 
 function leaveGame(){
   console.log('Leaving the game');
@@ -102,10 +115,6 @@ function sendChat(){
 
 }
 
-function triggerThread(){
-  console.log('Client triggered trigger_Thread');
-  socket.emit('trigger_Thread');
-}
 
 var toggled = false;
 function toggleReady(){
