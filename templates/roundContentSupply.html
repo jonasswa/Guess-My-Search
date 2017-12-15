@@ -1,1 +1,18 @@
-SUPPLY
+<div id = "entryList" class="centering">
+  {% if nrOfPlayers != nrOfEntries %}
+  <p>Collecting entries, please wait...</p><br>
+  <img src="{{ url_for('static', filename='loading.gif') }}" alt = "loading..." width: "128px" height="128px"></img>
+  {% endif %}
+  <table class="centering">
+    {% for i in range(nrOfEntries) %}
+    <tr>
+      <td>{{ searchStrings[i] }}</td>
+    </tr>
+    <tr>
+      <td><input type="text" id = "autoComplete_{{ i }}" placeholder="Your autocomplete"></td>
+    </tr>
+    <tr>
+    </tr>
+    {% endfor %}
+  </table>
+</div>

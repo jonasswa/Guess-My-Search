@@ -101,10 +101,11 @@ def gameRoomContent():
     if userNotComplete(user, verbose = False):
          return 'ERROR: Something strange happened. Please leave game and rejoin'
 
-    nrOfRounds = user.gameObject.nrOfRounds
-    timePerRound = user.gameObject.timePerRound
-    gameName = user.gameObject.gameName
-    roundNr = user.gameObject.currentRound
+    game = user.gameObject
+    nrOfRounds = game.nrOfRounds
+    timePerRound = game.timePerRound
+    gameName = game.gameName
+    roundNr = game.currentRound
 
     if (user.gameObject.get_Stage() == 'lobby'):
         return render_template('lobbyContent.html',
@@ -119,14 +120,22 @@ def gameRoomContent():
                                 nrOfRounds = nrOfRounds)
 
     elif (user.gameObject.get_Stage() == 'roundSupply'):
-        user.gameObject.spawnedThread = None
-        return render_template('roundContentSupply.html')
+        game.spawnedThread = None
+        game.reset_Players_Ready()
+
+        emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
+
+        return render_template('roundContentSupply.html',
+                                nrOfPlayers = game.get_Nr_Of_Players(),
+                                searchStrings = game.get_Search_Strings(),
+                                nrOfEntries = game.nrOfEntry)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
             return render_template('roundContentEnd.html')
 
     elif (user.gameObject.get_Stage() == 'gameSummary'):
             return render_template('gameContentSummary.html')
+
 
 @app.route('/playerList')
 def playerList():
@@ -199,9 +208,11 @@ def collectData(msg):
         return
 
     if verbose: print ('Setting entry for user')
-    user.playerObject.set_Entry(msg['searchString'], msg['suggestion'])
+    user.gameObject.add_Entry(msg['searchString'], msg['suggestion'], user.playerObject)
     if verbose: print('Got entry')
 
+    if user.gameObject.nrOfEntry >= user.gameObject.get_Nr_Of_Players():
+        emitToGame(game = user.gameObject, arg = ('refresh_div_content',{'div': 'entryList', 'cont': '/gameRoomContent'}), lock = timerLock)
 
 @socketio.on('toggle_ready')
 def toggleReady(msg):
@@ -327,8 +338,10 @@ def emit(arg, uniqueID, lock, user = None):
     An emit method that requires a lock. Dunno if I need this...
     TODO: Find out if i need the lock.
     '''
+    verbose = False
+    
     with lock:
-        print ('Did an emit')
+        if verbose: print ('Did an emit')
         if (not user):
             userSID = clients.find_User_By_uniqueID(uniqueID).sid
         else:

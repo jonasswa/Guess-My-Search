@@ -56,6 +56,20 @@ socket.on('update_chat', function(){
   $("#loadChat").load("/chatContent");
 });
 
+socket.on('refresh_div_content', function(params){
+  console.log('Refreshing div content');
+  var div = params.div;
+  var cont = params.cont;
+
+  if (!div || !cont){
+    console.log('But there was an error getting the parameters');
+    return;
+  }
+
+  $("#"+div).load(cont);
+
+});
+
 socket.on('round_End', function(){
   console.log('The round has ended. Sending data to server');
   var searchString = 'test';//document.getElementById('searchString').value;

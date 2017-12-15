@@ -5,12 +5,12 @@ from utilslib import getAutoComplete
 
 class Entry:
 
-    def __init__(self, searchString, autoComplete, playerObject):
+    def __init__(self, searchString, autoComplete, number, playerObject):
         self.searchString = searchString
         self.autoComplete = autoComplete
         self.playerObject = playerObject
         self.googleAutocompletes = getAutoComplete(search_input=searchString)
-
+        self.nr = number
 
 class Player:
 
@@ -27,9 +27,9 @@ class Player:
 
         self.entry = None
 
-    def set_Entry(self, searchString, autoComplete):
-        self.entry = Entry(searchString, autoComplete, self)
-
+    def set_Entry(self, searchString, autoComplete, nrOfEntry):
+        self.entry = Entry(searchString, autoComplete, nrOfEntry, self)
+        return self.entry
 
     def __str__(self):
         return self.name
@@ -65,7 +65,11 @@ class Game:
         self.lock = RLock()
         self.roundEnded = False
         self.spawnedThread = None
+        self.nrOfEntry = 0
+        self.entries = []
 
+    def get_Nr_Of_Players(self):
+        return (len(self.players))
 
     def go_To_Next_Stage(self):
         self._stageIndex += 1
@@ -109,6 +113,19 @@ class Game:
             entry += player.name
 
             ret.append(entry)
+        return ret
+
+    def add_Entry(self, searchString, autoComplete, player):
+        entry = player.set_Entry(searchString, autoComplete, self.nrOfEntry)
+        self.entries.append(entry)
+        self.nrOfEntry += 1
+
+    def get_Search_Strings(self):
+        ret = []
+
+        for entry in self.entries:
+            ret.append(entry.searchString)
+
         return ret
 
     def reset_Players_Ready(self):
