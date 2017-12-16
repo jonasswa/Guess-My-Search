@@ -83,15 +83,14 @@ socket.on('round_End', function(){
 
 socket.on('supply_End', function(args){
   console.log('The supply has ended. Sending data to server');
-  var data = collectSupply(nrOfEntries);
+  var data = collectSupply(args.nrOfEntries);
+  console.log(data)
 
-  socket.emit('submit_entry', {searchString: searchString, suggestion: suggestion});
+  socket.emit('submit_supply', data);
 
   $( "#content" ).load("/gameRoomContent");
 
 });
-
-
 
 
 function leaveGame(){

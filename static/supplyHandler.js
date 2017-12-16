@@ -1,5 +1,5 @@
 function collectSupply(nrOfEntries){
-  console.log('Submitting supplasdy');
+  console.log('Submitting supply');
 
   var nrOfEntries = parseInt(nrOfEntries);
   var entries = {};
@@ -8,6 +8,9 @@ function collectSupply(nrOfEntries){
   for (var i = 0; i < nrOfEntries; i++){
     entries[String(i)] = $( "#autoComplete_"+String(i) ).val();
     console.log(entries[String(i)]);
+
   }
+
+  return entries;
 
 }

@@ -12,6 +12,19 @@ class Entry:
         self.googleAutocompletes = getAutoComplete(search_input=searchString)
         self.nr = number
 
+        self.otherAutocompletes = []
+
+    def addOtherAutocomplete(self, autoComplete, playerObject):
+        self.otherAutocompletes.append(self.OuterAutocomplete(autoComplete, playerObject))
+
+    class OuterAutocomplete:
+
+        def __init__(self, autoComplete, playerObject):
+            self.autoComplete = autoComplete
+            self.playerObject = playerObject
+            self.votes = 0
+
+
 class Player:
 
     def __init__(self, name, userObject, gameObject):
@@ -56,17 +69,22 @@ class Game:
         self.timePerRound = timePerRound
         self.nrOfRounds = int(nrOfRounds)
         self.currentRound = 1
-        self._roundCycle = ['roundStart', 'roundSupply', 'roundEnd']
+        self._roundCycle = ['roundStart', 'roundSupply', 'roundVote', 'roundEnd']
         self._stageIndex = 0
         self.gameStarted = False
         self.gameName = gameName
         self.players = []
         self.chatMessages = []
         self.lock = RLock()
-        self.roundEnded = False
+
         self.spawnedThread = None
         self.nrOfEntry = 0
         self.entries = []
+
+        self.roundEnded = False
+        self.supplyEnded = False
+
+        self.nrOfSupply = 0
 
     def get_Nr_Of_Players(self):
         return (len(self.players))
@@ -77,15 +95,21 @@ class Game:
             self._stageIndex = 0
             self.currentRound += 1
             self.roundEnded = False
+            self.supplyEnded = False
 
-    def end_Round(self):
+    def end_Stage(self):
         with self.lock:
-            if self.get_Stage()=='roundStart':
+            if self.get_Stage() =='roundStart' and not(self.roundEnded):
+                print("Ending round start")
                 self.roundEnded = True
-                self._stageIndex += 1
-                if (self._stageIndex >= len(self._roundCycle)):
-                    self._stageIndex = 0
-                    self.currentRound += 1
+                self.go_To_Next_Stage()
+                return
+
+            if self.get_Stage() == 'roundSupply' and not(self.supplyEnded):
+                print("Ending round supply")
+                self.supplyEnded = True
+                self.go_To_Next_Stage()
+                return
 
     def get_Stage(self):
         if self.gameStarted == False:
@@ -130,6 +154,23 @@ class Game:
                 ret.append(entry.searchString)
 
         return ret
+
+    def get_Autocomplete_List(self, playerObject):
+        '''
+        The ret[[0,1], ...] is always the creators autocomplete, and
+        the googles autocolpete; in that order.
+        '''
+        ret = [[]]
+        for entry in self.entries:
+            if (entry.playerObject == playerObject):
+                ret.append([None])
+            else:
+                ret.append(entry.autoComplete)
+                ret.append(entry.googleAutocompletes[0])
+                for autcomplete in entry.otherAutocompletes:
+                    ret.append([autcomplete.autoComplete])
+        return ret
+
 
     def reset_Players_Ready(self):
         for player in self.players:
@@ -226,3 +267,10 @@ class GameContainter:
         ret+=('_____________________________')
 
         return ret
+
+
+if __name__=="_main__":
+    hanna = 1
+    hanna = "Hanna"
+
+    hanna = Game(gameName="Spillet", timePerRound=10, nrOfRounds=5)

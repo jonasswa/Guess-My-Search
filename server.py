@@ -9,6 +9,8 @@ from time import sleep
 from ClientStorage import Clients, User
 from gameObjects import Game, GameContainter, Player, ChatMmsg
 
+from random import shuffle
+
 #Init server
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = 'lskwod=91230?=)ASD?=)("")@'
@@ -20,18 +22,19 @@ clients = Clients()
 
 games = GameContainter()
 
+debugging = True
 
 @app.route('/', methods = ['POST', 'GET'])
 @app.route('/index', methods = ['POST', 'GET'])
 def index():
-    verbose = False
+    verbose = (False or debugging)
     error = request.args.get('error')
     return make_response(render_template('makeGame.html', title = "Welcome", cool = 123, error = error))
 
 @app.route('/gameRoom', methods = ['POST', 'GET'])
 def gameRoom():
     global games
-    verbose = False
+    verbose = (False or debugging)
     argumentsMakeGame = ['name', 'gameName', 'nrOfRounds', 'time', 'newGame']
     argumentsJoinGame = ['name', 'gameName', 'newGame']
 
@@ -98,7 +101,7 @@ def gameRoomContent():
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
 
-    if userNotComplete(user, verbose = False):
+    if userNotComplete(user, verbose = (False or debugging)):
          return 'ERROR: Something strange happened. Please leave game and rejoin'
 
     game = user.gameObject
@@ -131,30 +134,49 @@ def gameRoomContent():
                                 searchStrings = game.get_Search_Strings(user.playerObject),
                                 nrOfEntries = game.nrOfEntry)
 
+    elif (user.gameObject.get_Stage() == 'roundVote'):
+            game.reset_Players_Ready()
+            emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
+            return makeVoteContent(user)
+
     elif (user.gameObject.get_Stage() == 'roundEnd'):
             return render_template('roundContentEnd.html')
 
     elif (user.gameObject.get_Stage() == 'gameSummary'):
             return render_template('gameContentSummary.html')
 
+def makeVoteContent(user):
+    game = user.gameObject
+    playerObject = user.playerObject
+
+    autocompletes = game.get_Autocomplete_List(playerObject)
+
+    print(autocompletes)
+
+    return render_template('roundContentVote.html',
+                            nrOfPlayers = game.get_Nr_Of_Players(),
+                            nrOfEntries = game.nrOfEntry,
+                            searchStrings = game.get_Search_Strings(user.playerObject),
+                            autocompletes = autocompletes)
 
 @app.route('/playerList')
 def playerList():
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
-    verbose = False
-    if userNotComplete(user, verbose = False):
+    verbose = (False or debugging)
+    if userNotComplete(user, verbose = (False or debugging)):
         return redirect(url_for('index') + '?error=User not in game')
 
     playerList = user.gameObject.get_Player_Names_And_Status()
     if verbose: print('Got {} players'.format(len(playerList)))
     return render_template('playerList.html', playerList = playerList)
 
+
 @app.route('/chatContent')
 def chatContent():
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
-    if userNotComplete(user, verbose = False):
+    if userNotComplete(user, verbose = (False or debugging)):
         return redirect(url_for('index') + '?error=User not in game')
     chat = user.gameObject.chatMessages
     msgs = []
@@ -173,7 +195,7 @@ def chatContent():
 
 @app.route('/leave_Game')
 def leaveGame():
-    verbose = True
+    verbose = (False or debugging)
 
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
@@ -196,7 +218,7 @@ def leaveGame():
 
 @socketio.on('submit_entry')
 def collectData(msg):
-    verbose = True
+    verbose = (False or debugging)
     if verbose: print ('Entry reveived by the server')
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
@@ -215,9 +237,50 @@ def collectData(msg):
     if user.gameObject.nrOfEntry >= user.gameObject.get_Nr_Of_Players():
         emitToGame(game = user.gameObject, arg = ('refresh_div_content',{'div': 'entryList', 'cont': '/gameRoomContent'}), lock = timerLock)
 
+@socketio.on('submit_supply')
+def submitSupply(data):
+    verbose = (True or debugging)
+    if verbose: print ('Supply reveived by the server')
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    if verbose: print ('User found')
+    if (not user):
+        if verbose: print('No user found when collecting the data')
+        return
+
+    game = user.gameObject
+    if verbose: print ('The data received is: {}'.format(data))
+
+    if (not data):
+        return
+
+    if verbose: print('The actual data:')
+
+    for key, value in data.items():
+        if verbose: print('Key: {} \t Value: {}'.format(key, value))
+        if value == '':
+            continue
+        game.entries[int(key)].addOtherAutocomplete(value, user.playerObject)
+
+    game.nrOfSupply += 1
+
+    if user.gameObject.nrOfSupply >= user.gameObject.get_Nr_Of_Players():
+        emitToGame(game = user.gameObject, arg = ('refresh_div_content',{'div': 'contentVote', 'cont': '/gameRoomContent'}), lock = timerLock)
+
+
+    if verbose:
+        print('')
+        for entry in game.entries:
+            print('-------------------------------------------')
+            print('The entry with the serch string: \t {}\nHas the following autocompletes added:'.format(entry.searchString))
+            for supply in entry.otherAutocompletes:
+                print (supply.autoComplete)
+            print('-------------------------------------------')
+        print('')
+
 @socketio.on('toggle_ready')
 def toggleReady(msg):
-    verbose = False
+    verbose = (False or debugging)
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
 
@@ -237,6 +300,9 @@ def toggleReady(msg):
     emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
     playersReady = game.all_Players_Ready()
 
+    print ('STAGE:', game.get_Stage())
+
+    #Start round
     if playersReady and game.gameStarted == False and not game.spawnedThread:
         game.gameStarted = True
         game.reset_Players_Ready()
@@ -248,11 +314,21 @@ def toggleReady(msg):
         game.spawnedThread.start()
         return
 
+    #End round
     if playersReady and game.get_Stage() == 'roundStart':
         if verbose: print ('Round ended by users')
-        user.gameObject.end_Round()
+        user.gameObject.end_Stage()
+        game.reset_Players_Ready()
         if verbose: print('Current stage of game is: {}'.format(user.gameObject.get_Stage()))
         emitToGame(game = user.gameObject, arg = ('round_End', {}), lock = timerLock)
+        emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
+        return
+
+    #End supply
+    if playersReady and game.get_Stage() == 'roundSupply':
+        user.gameObject.end_Stage()
+        game.reset_Players_Ready()
+        emitToGame(game = user.gameObject, arg = ('supply_End', {'nrOfEntries': user.gameObject.nrOfEntry}), lock = timerLock)
         emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
         return
 
@@ -270,7 +346,7 @@ class RoundTimer(Thread):
         if (not self.user.gameObject) or (self.user.gameObject.roundEnded):
             return
 
-        self.user.gameObject.end_Round()
+        self.user.gameObject.end_Stage()
         emitToGame(game = self.user.gameObject, arg = ('round_End', {'url':'/gameRoomContent'}), lock = timerLock)
         emitToGame(game = self.user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
         return
@@ -279,7 +355,7 @@ class RoundTimer(Thread):
 @socketio.on('handle_chat')
 def handleChat(msg):
     #update_chat
-    verbose = False
+    verbose = (False or debugging)
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
     if (not user):
@@ -296,7 +372,7 @@ def handleChat(msg):
 
 @socketio.on('connected')
 def client_connect():
-    verbose = False
+    verbose = (False or debugging)
     '''
     I need to identify the user. If the user reloads, the session ID will change.
     A unique user-key is provisided for each new user, and the session ID is updated
@@ -339,7 +415,7 @@ def emit(arg, uniqueID, lock, user = None):
     An emit method that requires a lock. Dunno if I need this...
     TODO: Find out if i need the lock.
     '''
-    verbose = False
+    verbose = (False or debugging)
 
     with lock:
         if verbose: print ('Did an emit')
@@ -349,7 +425,7 @@ def emit(arg, uniqueID, lock, user = None):
             userSID = user.sid
         socketio.emit(*arg, room = userSID)
 
-def userNotComplete(user, verbose = False):
+def userNotComplete(user, verbose = (False or debugging)):
     if verbose:
         print('\nUser name: {}'.format(user.name))
         print('User gameObject pointer {}'.format(user.gameObject))
@@ -360,4 +436,4 @@ def userNotComplete(user, verbose = False):
         return False
 
 if __name__ == "__main__":
-     socketio.run(app, debug = True)
+     socketio.run(app, debug = False)
