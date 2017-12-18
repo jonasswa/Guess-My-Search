@@ -15,10 +15,10 @@
     {% for i in range((value|length) - 1) %}
     {% if value[i+1] %}
     <tr>
-      <td class = 'alnleft'>Autocomplete: </td><td><p = "nr{{ i }}">{{ value[i+1] }}</p></td><br>
+      <td class = 'alnleft'>Autocomplete: </td><td><p>{{ value[i+1] }}</p></td>
+      <td><input id ="checkBox_{{ value[0] }}_{{ i }}" type = "checkbox" onchange="submitFavorite({{ value[0] }}, {{ i }}, {{ (value|length) }})"></td>
+      <br>
     </tr>
-    {% else %}
-    <div id = "nr{{ i }}"></div>
     {% endif %}
     {% endfor %}
     <tr>

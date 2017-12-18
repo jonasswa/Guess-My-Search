@@ -175,7 +175,6 @@ class Game:
 
                 for autcomplete in entry.otherAutocompletes:
                     if autcomplete.playerObject == playerObject:
-                        autoList.append(None)
                         continue
                     autoList.append(autcomplete.autoComplete)
 

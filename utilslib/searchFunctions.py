@@ -1,5 +1,20 @@
 import re
 import requests
+from html import unescape
+
+def parse_From_HTML(string):
+    return (unescape(string))
+
+def fix_Search(search, output):
+    search = search.lower()
+    word = search.split(' ')[-1]
+
+    try:
+        indx = search.index(word)
+        ret = output[indx:]
+        return ret
+    except:
+        return output
 
 def getAutoComplete(search_input):
     '''
@@ -11,7 +26,7 @@ def getAutoComplete(search_input):
     :return: List of suggestions
     '''
 
-    url = "http://suggestqueries.google.com/complete/search?output=toolbar&q="
+    url = "http://suggestqueries.google.com/complete/search?output=toolbar&use_similar=0&q="
     #url += parse.quote(search_input)
     url+= search_input
 
@@ -27,8 +42,15 @@ def getAutoComplete(search_input):
 
     if len(result)< 1:
         return [None]
-    
+
+    result = [parse_From_HTML(x) for x in result]
+    result = [re.sub(search_input.lower(), '', x) for x in result]
+
+    result = [re.sub(r'^ ', '', x) for x in result]
+
     return result
 
+
+
 if __name__ == "__main__":
-    print(getAutoComplete('kan man bruke '))
+    print(getAutoComplete("Why can't my cat sit"))
