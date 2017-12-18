@@ -24,6 +24,9 @@ def getAutoComplete(search_input):
         if result[i] == search_input:
             del result[i]
             return result
+
+    if len(result)< 1:
+        return [None]
     
     return result
 

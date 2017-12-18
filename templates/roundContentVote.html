@@ -6,21 +6,24 @@
   <h3>Please vote for your favorite autocomplete</h3>
   {% endif %}
   <table class="centering">
-    {% for i in range(nrOfEntries) %}
-    {% if searchStrings[i] %}
+    {% for key, value in autocompletes.items() %}
+    {% if value[1] %}
     <tr>
-      <td class = 'alnleft'>Seartch string: <i></td><td><b>{{ searchStrings[i] }}</b></i></td>
+      <td class = 'alnleft'>Seartch string: <i></td><td><b>{{ key }}</b></i></td>
     </tr>
-    {% for j in range(autocompletes[i]|length) %}
+
+    {% for i in range((value|length) - 1) %}
+    {% if value[i+1] %}
     <tr>
-      <td class = 'alnleft'>Autocomplete: </td><td><p = "nr{{ i }}">{{ autocompletes[i][j] }}</p></td><br>
+      <td class = 'alnleft'>Autocomplete: </td><td><p = "nr{{ i }}">{{ value[i+1] }}</p></td><br>
     </tr>
+    {% else %}
+    <div id = "nr{{ i }}"></div>
+    {% endif %}
     {% endfor %}
     <tr>
       <td>........................</td><td>........................</td>
     </tr>
-    {% else %}
-    <div id = "nr{{ i }}"></div>
     {% endif %}
     {% endfor %}
   </table>

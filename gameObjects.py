@@ -160,15 +160,29 @@ class Game:
         The ret[[0,1], ...] is always the creators autocomplete, and
         the googles autocolpete; in that order.
         '''
-        ret = [[]]
+        ret = {}
+        i = 0
         for entry in self.entries:
+            autoList = []
+            autoList.append(i)
+
             if (entry.playerObject == playerObject):
-                ret.append([None])
+                autoList.append(None)
             else:
-                ret.append(entry.autoComplete)
-                ret.append(entry.googleAutocompletes[0])
+
+                autoList.append(entry.autoComplete)
+                autoList.append(entry.googleAutocompletes[0])
+
                 for autcomplete in entry.otherAutocompletes:
-                    ret.append([autcomplete.autoComplete])
+                    if autcomplete.playerObject == playerObject:
+                        autoList.append(None)
+                        continue
+                    autoList.append(autcomplete.autoComplete)
+
+            ret[entry.searchString] = autoList
+
+            i+=1
+
         return ret
 
 

@@ -11,6 +11,7 @@ from gameObjects import Game, GameContainter, Player, ChatMmsg
 
 from random import shuffle
 
+
 #Init server
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = 'lskwod=91230?=)ASD?=)("")@'
@@ -22,7 +23,7 @@ clients = Clients()
 
 games = GameContainter()
 
-debugging = True
+debugging = False
 
 @app.route('/', methods = ['POST', 'GET'])
 @app.route('/index', methods = ['POST', 'GET'])
@@ -136,7 +137,7 @@ def gameRoomContent():
 
     elif (user.gameObject.get_Stage() == 'roundVote'):
             game.reset_Players_Ready()
-            emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
+            #emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
             return makeVoteContent(user)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
@@ -156,7 +157,6 @@ def makeVoteContent(user):
     return render_template('roundContentVote.html',
                             nrOfPlayers = game.get_Nr_Of_Players(),
                             nrOfEntries = game.nrOfEntry,
-                            searchStrings = game.get_Search_Strings(user.playerObject),
                             autocompletes = autocompletes)
 
 @app.route('/playerList')
@@ -239,21 +239,22 @@ def collectData(msg):
 
 @socketio.on('submit_supply')
 def submitSupply(data):
-    verbose = (True or debugging)
-    if verbose: print ('Supply reveived by the server')
+    verbose = (False or debugging)
+    if verbose: print ('\n---------------------\nSupply reveived by the server')
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
-    if verbose: print ('User found')
+
     if (not user):
         if verbose: print('No user found when collecting the data')
         return
 
+
     game = user.gameObject
     if verbose: print ('The data received is: {}'.format(data))
-
+    if verbose: print ('player {} found'.format(user.playerObject.name))
     if (not data):
         return
-
+    if verbose: print('')
     if verbose: print('The actual data:')
 
     for key, value in data.items():
@@ -262,13 +263,17 @@ def submitSupply(data):
             continue
         game.entries[int(key)].addOtherAutocomplete(value, user.playerObject)
 
+    if verbose: print('')
+
     game.nrOfSupply += 1
+    if verbose: print ('The game has received {}nr of supplies\n---------------------\n'.format(game.nrOfSupply))
 
     if user.gameObject.nrOfSupply >= user.gameObject.get_Nr_Of_Players():
-        emitToGame(game = user.gameObject, arg = ('refresh_div_content',{'div': 'contentVote', 'cont': '/gameRoomContent'}), lock = timerLock)
+        if verbose: print ('We should now refresh the div content')
+        emitToGame(game = user.gameObject, arg = ('refresh_div_content', {'div': 'contentVote', 'cont': '/gameRoomContent'}), lock = timerLock)
+        #emitToGame(game = user.gameObject, arg = ('refresh_div_content',{'div': 'entryList', 'cont': '/gameRoomContent'}), lock = timerLock)
 
-
-    if verbose:
+    if verbose and False:
         print('')
         for entry in game.entries:
             print('-------------------------------------------')
