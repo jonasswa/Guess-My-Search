@@ -92,6 +92,14 @@ socket.on('supply_End', function(args){
 
 });
 
+socket.on('vote_End', function (args) {
+
+  socket.emit('submit_favorite', favoriteAutocomplete);
+
+  $( "#content" ).load("/gameRoomContent");
+
+});
+
 
 function leaveGame(){
   console.log('Leaving the game');

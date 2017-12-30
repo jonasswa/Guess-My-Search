@@ -1,2 +1,10 @@
-ROUND ENDED
-SHOW WHO DID BEST
+<table class="centering">
+  <tr>
+    <th>Name</th><th>Points</th>
+  </tr>
+  {% for key, value in playersPoints.items() %}
+  <tr>
+    <td>{{ key }}</td><td>{{ value }}</td>
+  </tr>
+  {% endfor %}
+</table>

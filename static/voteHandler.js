@@ -7,7 +7,6 @@ function submitFavorite(searchStringID, autoCompleteID, nrAutocompletes){
   var favBox = document.getElementById("checkBox_"+searchStringID+"_"+autoCompleteID);
 
   if (favBox.checked == false){
-    console.log('ITS CHECKED');
     favBox.checked = true;
     return;
   }

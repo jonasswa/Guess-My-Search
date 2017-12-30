@@ -9,6 +9,8 @@ class Entry:
         self.searchString = searchString
         self.autoComplete = autoComplete
         self.playerObject = playerObject
+        self.votesForPlayer = 0
+        self.votesForGoogle = 0
         self.googleAutocompletes = getAutoComplete(search_input=searchString)
         self.nr = number
 
@@ -69,7 +71,7 @@ class Game:
         self.timePerRound = timePerRound
         self.nrOfRounds = int(nrOfRounds)
         self.currentRound = 1
-        self._roundCycle = ['roundStart', 'roundSupply', 'roundVote', 'roundEnd']
+        self._roundCycle = ['roundStart', 'roundSupply', 'roundVote', 'roundEnd', 'gameSummary']
         self._stageIndex = 0
         self.gameStarted = False
         self.gameName = gameName
@@ -82,6 +84,7 @@ class Game:
         self.entries = []
 
         self.roundEnded = False
+        self.voteEnd = False
         self.supplyEnded = False
 
         self.nrOfSupply = 0
@@ -96,6 +99,7 @@ class Game:
             self.currentRound += 1
             self.roundEnded = False
             self.supplyEnded = False
+            self.voteEnd = False
 
     def end_Stage(self):
         with self.lock:
@@ -110,6 +114,13 @@ class Game:
                 self.supplyEnded = True
                 self.go_To_Next_Stage()
                 return
+
+            if self.get_Stage() == 'roundVote' and not(self.voteEnd):
+                print("Ending round supply")
+                self.voteEnd = True
+                self.go_To_Next_Stage()
+                return
+
 
     def get_Stage(self):
         if self.gameStarted == False:
@@ -155,6 +166,7 @@ class Game:
 
         return ret
 
+
     def get_Autocomplete_List(self, playerObject):
         '''
         The ret[[0,1], ...] is always the creators autocomplete, and
@@ -174,6 +186,7 @@ class Game:
                 autoList.append(entry.googleAutocompletes[0])
 
                 for autcomplete in entry.otherAutocompletes:
+                    # TODO: Check if i need this?!
                     if autcomplete.playerObject == playerObject:
                         continue
                     autoList.append(autcomplete.autoComplete)
@@ -183,7 +196,6 @@ class Game:
             i+=1
 
         return ret
-
 
     def reset_Players_Ready(self):
         for player in self.players:

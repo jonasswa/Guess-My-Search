@@ -141,9 +141,11 @@ def gameRoomContent():
             return makeVoteContent(user)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
-            return render_template('roundContentEnd.html')
+            game.reset_Players_Ready()
+            return makeRoundEnd(user)
 
     elif (user.gameObject.get_Stage() == 'gameSummary'):
+            game.reset_Players_Ready()
             return render_template('gameContentSummary.html')
 
 def makeVoteContent(user):
@@ -158,6 +160,24 @@ def makeVoteContent(user):
                             nrOfPlayers = game.get_Nr_Of_Players(),
                             nrOfEntries = game.nrOfEntry,
                             autocompletes = autocompletes)
+
+def makeRoundEnd(user):
+    game = user.gameObject
+    playerObject = user.playerObject
+
+    playersPoints = {}
+
+    for player in game.players:
+        playersPoints[player.name] = player.points
+
+
+    searchStrings = {}
+
+    for entry in game.entries:
+        searchStrings[entry.searchString]
+
+
+    return render_template('roundContentEnd.html', playersPoints = playersPoints)
 
 @app.route('/playerList')
 def playerList():
@@ -268,6 +288,7 @@ def submitSupply(data):
     game.nrOfSupply += 1
     if verbose: print ('The game has received {}nr of supplies\n---------------------\n'.format(game.nrOfSupply))
 
+    #All "supplies" are received
     if user.gameObject.nrOfSupply >= user.gameObject.get_Nr_Of_Players():
         if verbose: print ('We should now refresh the div content')
         emitToGame(game = user.gameObject, arg = ('refresh_div_content', {'div': 'contentVote', 'cont': '/gameRoomContent'}), lock = timerLock)
@@ -283,9 +304,38 @@ def submitSupply(data):
             print('-------------------------------------------')
         print('')
 
+@socketio.on('submit_favorite')
+def submitFavorite(favorite):
+    print('The server received a favorite: {}'.format(favorite))
+    uniqueID = request.cookies.get('uniqueID')
+    user = clients.find_User_By_uniqueID(uniqueID)
+    game = user.gameObject
+
+    if (not favorite):
+        user.playerObject.points -= 1
+        return
+
+    index = favorite.split("_")
+
+    #This gets the search string
+    entry = game.entries[index[0]]
+
+    if index[1] == 0:
+        #creators
+        entry.votesForPlayer += 1
+        entry.playerObject.points += 1
+    elif index[1] == 1:
+        #Googles
+        entry.votesForGoogle += 1
+        user.playerObject.points += 1
+    else:
+        entry.otherAutocompletes[index[1]-2].votes += 1
+        entry.otherAutocompletes[index[1]-2].playerObject.points += 1
+
+
 @socketio.on('toggle_ready')
 def toggleReady(msg):
-    verbose = (False or debugging)
+    verbose = (True or debugging)
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
 
@@ -305,7 +355,7 @@ def toggleReady(msg):
     emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
     playersReady = game.all_Players_Ready()
 
-    print ('STAGE:', game.get_Stage())
+    if verbose: print ('STAGE:', game.get_Stage())
 
     #Start round
     if playersReady and game.gameStarted == False and not game.spawnedThread:
@@ -335,6 +385,15 @@ def toggleReady(msg):
         game.reset_Players_Ready()
         emitToGame(game = user.gameObject, arg = ('supply_End', {'nrOfEntries': user.gameObject.nrOfEntry}), lock = timerLock)
         emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Round ended'}), lock = timerLock)
+        return
+
+
+    #End vote
+    if playersReady and game.get_Stage() == 'roundVote':
+        user.gameObject.end_Stage()
+        game.reset_Players_Ready()
+        emitToGame(game = user.gameObject, arg = ('vote_End', {}), lock = timerLock)
+        emitToGame(game = user.gameObject, arg = ('client_message', {'msg':'Vote ended'}), lock = timerLock)
         return
 
 
