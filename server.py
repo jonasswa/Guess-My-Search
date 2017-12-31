@@ -316,11 +316,21 @@ def submitFavorite(favorite):
     user = clients.find_User_By_uniqueID(uniqueID)
     game = user.gameObject
 
-    if (not favorite):
+    autoComplete = game.get_Autocomlete_by_ID(favorite)
+
+    if (not autoComplete):
         user.playerObject.points -= 1
         return
 
+    user.playerObject.autocompleteVotedFor = autoComplete
 
+    if (autoComplete.isGoogle):
+        user.playerObject.points += 1
+        return
+
+    autoComplete.playerObject.points += 1
+
+    return
 
 
 

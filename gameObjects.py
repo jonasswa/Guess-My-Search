@@ -78,6 +78,7 @@ class Player:
         userObject.playerObject = self
 
         self.entry = None
+        self.autocompleteVotedFor = None
 
     def set_Entry(self, searchString, autoComplete, nrOfEntry):
         self.entry = Entry(searchString, autoComplete, nrOfEntry, self)
@@ -176,6 +177,21 @@ class Game:
         searchStringID_autocompleteID
 
         '''
+
+        try:
+            searchID, autoID = ID.split("_")
+            searchID = int(searchID)
+            autoID = int(autoID)
+        except:
+            return None
+
+        for entry in self.entries:
+            if searchID == entry.ID:
+                for auto in entry.autocompletes:
+                    if autoID == auto.ID:
+                        return auto
+
+        return None
 
 
     def get_Stage(self):
