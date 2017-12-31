@@ -152,14 +152,8 @@ def makeVoteContent(user):
     game = user.gameObject
     playerObject = user.playerObject
 
-    autocompletes = game.get_Autocomplete_List(playerObject)
 
-    print(autocompletes)
-
-    return render_template('roundContentVote.html',
-                            nrOfPlayers = game.get_Nr_Of_Players(),
-                            nrOfEntries = game.nrOfEntry,
-                            autocompletes = autocompletes)
+    return render_template('roundContentVote.html')
 
 def makeRoundEnd(user):
     game = user.gameObject
@@ -174,7 +168,7 @@ def makeRoundEnd(user):
     searchStrings = {}
 
     for entry in game.entries:
-        searchStrings[entry.searchString]
+        searchStrings[entry.searchString] = {}
 
 
     return render_template('roundContentEnd.html', playersPoints = playersPoints)
@@ -237,12 +231,15 @@ def leaveGame():
     return redirect(url_for('index'))
 
 @socketio.on('submit_entry')
-def collectData(msg):
+def submitEntry(msg):
     verbose = (False or debugging)
     if verbose: print ('Entry reveived by the server')
+
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
+
     if verbose: print ('User retrieved')
+
     if (not user):
         if verbose: print('No user found when collecting the data')
         return
@@ -251,7 +248,9 @@ def collectData(msg):
         return
 
     if verbose: print ('Setting entry for user')
+
     user.gameObject.add_Entry(msg['searchString'], msg['suggestion'], user.playerObject)
+
     if verbose: print('Got entry')
 
     if user.gameObject.nrOfEntry >= user.gameObject.get_Nr_Of_Players():

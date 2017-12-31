@@ -2,29 +2,61 @@ from ClientStorage import User
 from time import gmtime, strftime
 from threading import RLock
 from utilslib import getAutoComplete
+from random import shuffle
+
+class Autocomplete:
+
+    def __init__(self, autocomplete, playerObject = None, ID = 0):
+        self.autocomplete = autocomplete
+        self.playerObject = playerObject
+        self.votes = 0
+        self.isGoogle = False
+        self.ID = ID
+
+        if (not self.playerObject):
+            self.isGoogle = True
 
 class Entry:
 
-    def __init__(self, searchString, autoComplete, number, playerObject):
+    def __init__(self, searchString, autocomplete, ID, playerObject):
         self.searchString = searchString
-        self.autoComplete = autoComplete
         self.playerObject = playerObject
-        self.votesForPlayer = 0
-        self.votesForGoogle = 0
-        self.googleAutocompletes = getAutoComplete(search_input=searchString)
-        self.nr = number
+        self.ID = ID
+        self._autocompleteID = 2
 
-        self.otherAutocompletes = []
+        self.autocompletes = []
 
-    def addOtherAutocomplete(self, autoComplete, playerObject):
-        self.otherAutocompletes.append(self.OuterAutocomplete(autoComplete, playerObject))
+        self.autocompletes.append(Autocomplete(autocomplete, playerObject, 0))
+        self.autocompletes.append(Autocomplete(getAutoComplete(search_input=searchString), None, 1))
 
-    class OuterAutocomplete:
 
-        def __init__(self, autoComplete, playerObject):
-            self.autoComplete = autoComplete
-            self.playerObject = playerObject
-            self.votes = 0
+    def add_Autocomplete(self, autocomplete, playerObject):
+        self.autocompletes.append(Autocomplete(autocomplete, playerObject, self._autocompleteID))
+        self._autocompleteID += 1
+
+    def get_Autcomplete_by_ID(self, ID):
+
+        for a in self.autocompletes:
+            if a.ID == ID:
+                return a
+
+        return None
+
+    def get_All_Autocompletes_ID(self):
+        '''
+        Function for getting search string as well as autocompeltes
+        in a list
+        ret = ["Search String", "autocomplete2", "autocomplete1", ...]
+        '''
+        ret = []
+        #ret.append(self.searchString)
+        for a in self.autocompletes:
+            ret.append(a.autocomplete+str(a.ID))
+
+        shuffle(ret)
+        ret.insert(0, self.searchString)
+
+        return ret
 
 
 class Player:
@@ -163,37 +195,6 @@ class Game:
                 ret.append(None)
             else:
                 ret.append(entry.searchString)
-
-        return ret
-
-
-    def get_Autocomplete_List(self, playerObject):
-        '''
-        The ret[[0,1], ...] is always the creators autocomplete, and
-        the googles autocolpete; in that order.
-        '''
-        ret = {}
-        i = 0
-        for entry in self.entries:
-            autoList = []
-            autoList.append(i)
-
-            if (entry.playerObject == playerObject):
-                autoList.append(None)
-            else:
-
-                autoList.append(entry.autoComplete)
-                autoList.append(entry.googleAutocompletes[0])
-
-                for autcomplete in entry.otherAutocompletes:
-                    # TODO: Check if i need this?!
-                    if autcomplete.playerObject == playerObject:
-                        continue
-                    autoList.append(autcomplete.autoComplete)
-
-            ret[entry.searchString] = autoList
-
-            i+=1
 
         return ret
 
