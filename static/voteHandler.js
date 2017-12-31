@@ -2,7 +2,8 @@ var favoriteAutocomplete;
 
 
 function submitFavorite(searchStringID, autoCompleteID, nrAutocompletes){
-  var nrAutocompletes = parseInt(nrAutocompletes) -1;
+  var nrAutocompletes = parseInt(nrAutocompletes);
+
   favoriteAutocomplete = String(searchStringID) + "_" + String(autoCompleteID);
   var favBox = document.getElementById("checkBox_"+searchStringID+"_"+autoCompleteID);
 
@@ -15,6 +16,7 @@ function submitFavorite(searchStringID, autoCompleteID, nrAutocompletes){
     if (i == parseInt(autoCompleteID)){continue;}
     document.getElementById("checkBox_"+searchStringID+"_"+String(i)).checked = false;
   }
+
 
 
 }

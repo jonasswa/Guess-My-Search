@@ -3,13 +3,16 @@ from flask import Flask, make_response, request, session
 from flask import render_template, session, url_for, redirect
 
 from threading import RLock
-
 from threading import Thread
+
+from utilslib import list_to_HTML_table
+
 from time import sleep
 from ClientStorage import Clients, User
 from gameObjects import Game, GameContainter, Player, ChatMmsg
 
 from random import shuffle
+
 
 
 #Init server
@@ -137,7 +140,6 @@ def gameRoomContent():
 
     elif (user.gameObject.get_Stage() == 'roundVote'):
             game.reset_Players_Ready()
-            #emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
             return makeVoteContent(user)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
@@ -151,15 +153,13 @@ def gameRoomContent():
 def makeVoteContent(user):
     game = user.gameObject
     playerObject = user.playerObject
-
-    autocompletes = game.get_Autocomplete_List(playerObject)
-
-    print(autocompletes)
+    notReady = False
+    voteEntries = game.get_Vote_Entries(playerObject)
 
     return render_template('roundContentVote.html',
-                            nrOfPlayers = game.get_Nr_Of_Players(),
-                            nrOfEntries = game.nrOfEntry,
-                            autocompletes = autocompletes)
+                            notReady = notReady,
+                            voteEntries = voteEntries)
+
 
 def makeRoundEnd(user):
     game = user.gameObject
@@ -174,7 +174,7 @@ def makeRoundEnd(user):
     searchStrings = {}
 
     for entry in game.entries:
-        searchStrings[entry.searchString]
+        searchStrings[entry.searchString] = {}
 
 
     return render_template('roundContentEnd.html', playersPoints = playersPoints)
@@ -237,12 +237,15 @@ def leaveGame():
     return redirect(url_for('index'))
 
 @socketio.on('submit_entry')
-def collectData(msg):
+def submitEntry(msg):
     verbose = (False or debugging)
     if verbose: print ('Entry reveived by the server')
+
     uniqueID = request.cookies.get('uniqueID')
     user = clients.find_User_By_uniqueID(uniqueID)
+
     if verbose: print ('User retrieved')
+
     if (not user):
         if verbose: print('No user found when collecting the data')
         return
@@ -251,7 +254,9 @@ def collectData(msg):
         return
 
     if verbose: print ('Setting entry for user')
+
     user.gameObject.add_Entry(msg['searchString'], msg['suggestion'], user.playerObject)
+
     if verbose: print('Got entry')
 
     if user.gameObject.nrOfEntry >= user.gameObject.get_Nr_Of_Players():
@@ -281,7 +286,7 @@ def submitSupply(data):
         if verbose: print('Key: {} \t Value: {}'.format(key, value))
         if value == '':
             continue
-        game.entries[int(key)].addOtherAutocomplete(value, user.playerObject)
+        game.entries[int(key)].add_Autocomplete(value, user.playerObject)
 
     if verbose: print('')
 
@@ -311,26 +316,22 @@ def submitFavorite(favorite):
     user = clients.find_User_By_uniqueID(uniqueID)
     game = user.gameObject
 
-    if (not favorite):
+    autoComplete = game.get_Autocomlete_by_ID(favorite)
+
+    if (not autoComplete):
         user.playerObject.points -= 1
         return
 
-    index = favorite.split("_")
+    user.playerObject.autocompleteVotedFor = autoComplete
 
-    #This gets the search string
-    entry = game.entries[index[0]]
-
-    if index[1] == 0:
-        #creators
-        entry.votesForPlayer += 1
-        entry.playerObject.points += 1
-    elif index[1] == 1:
-        #Googles
-        entry.votesForGoogle += 1
+    if (autoComplete.isGoogle):
         user.playerObject.points += 1
-    else:
-        entry.otherAutocompletes[index[1]-2].votes += 1
-        entry.otherAutocompletes[index[1]-2].playerObject.points += 1
+        return
+
+    autoComplete.playerObject.points += 1
+
+    return
+
 
 
 @socketio.on('toggle_ready')
