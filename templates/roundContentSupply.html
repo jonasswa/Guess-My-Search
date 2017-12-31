@@ -4,7 +4,7 @@
   <img src="{{ url_for('static', filename='loading.gif') }}" alt = "loading..." width: "128px" height="128px"></img>
   {% else %}
   <h3>Please fill in your autocomplete for each search string</h3>
-  {% endif %}
+
   <table class="centering">
     {% for i in range(nrOfEntries) %}
     {% if searchStrings[i] %}
@@ -27,4 +27,5 @@
     <input type="checkbox" onclick="toggleReady()"></checkbox>
   </div>
   <!-- <button onclick="collectSupply({{ nrOfEntries }})"></button> -->
+  {% endif %}
 </div>

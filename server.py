@@ -3,13 +3,16 @@ from flask import Flask, make_response, request, session
 from flask import render_template, session, url_for, redirect
 
 from threading import RLock
-
 from threading import Thread
+
+from utilslib import list_to_HTML_table
+
 from time import sleep
 from ClientStorage import Clients, User
 from gameObjects import Game, GameContainter, Player, ChatMmsg
 
 from random import shuffle
+
 
 
 #Init server
@@ -137,7 +140,6 @@ def gameRoomContent():
 
     elif (user.gameObject.get_Stage() == 'roundVote'):
             game.reset_Players_Ready()
-            #emitToGame(game = game, arg = ('refresh_Player_List',{}), lock = timerLock)
             return makeVoteContent(user)
 
     elif (user.gameObject.get_Stage() == 'roundEnd'):
@@ -151,9 +153,13 @@ def gameRoomContent():
 def makeVoteContent(user):
     game = user.gameObject
     playerObject = user.playerObject
+    notReady = False
+    voteEntries = game.get_Vote_Entries(playerObject)
 
+    return render_template('roundContentVote.html',
+                            notReady = notReady,
+                            voteEntries = voteEntries)
 
-    return render_template('roundContentVote.html')
 
 def makeRoundEnd(user):
     game = user.gameObject
@@ -280,7 +286,7 @@ def submitSupply(data):
         if verbose: print('Key: {} \t Value: {}'.format(key, value))
         if value == '':
             continue
-        game.entries[int(key)].addOtherAutocomplete(value, user.playerObject)
+        game.entries[int(key)].add_Autocomplete(value, user.playerObject)
 
     if verbose: print('')
 
@@ -314,22 +320,8 @@ def submitFavorite(favorite):
         user.playerObject.points -= 1
         return
 
-    index = favorite.split("_")
 
-    #This gets the search string
-    entry = game.entries[index[0]]
 
-    if index[1] == 0:
-        #creators
-        entry.votesForPlayer += 1
-        entry.playerObject.points += 1
-    elif index[1] == 1:
-        #Googles
-        entry.votesForGoogle += 1
-        user.playerObject.points += 1
-    else:
-        entry.otherAutocompletes[index[1]-2].votes += 1
-        entry.otherAutocompletes[index[1]-2].playerObject.points += 1
 
 
 @socketio.on('toggle_ready')

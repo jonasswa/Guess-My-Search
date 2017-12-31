@@ -1,2 +1,2 @@
-from .utils import get_google_API_key
+from .utils import list_to_HTML_table
 from .searchFunctions import getAutoComplete, parse_From_HTML

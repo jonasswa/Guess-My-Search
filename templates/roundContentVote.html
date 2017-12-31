@@ -1,1 +1,32 @@
-ROUNDCONTENTVOTE
+<div id = "contentVote" class="centering">
+
+
+{% if notReady %}
+<p>Collecting data, please wait...</p><br>
+<img src="{{ url_for('static', filename='loading.gif') }}" alt = "loading..." width: "128px" height="128px"></img>
+
+{% else %}
+<h3>Please vote for your favorite autocomplete for each search string</h3>
+<table class="centering">
+  {% for row in voteEntries %}
+  <tr>
+    <th></th><th>{{ row[0][:-1] }}</th><th></th>
+  </tr>
+  {% for element in row[1:] %}
+  <tr>
+    <td></td>
+    <td>{{ element[:-1] }}</td>
+    <td><input id ="checkBox_{{ row[0][-1] }}_{{ element[-1] }}" type = "checkbox" onchange="submitFavorite({{ row[0][-1] }}, {{ element[-1] }}, {{ (row|length)-1 }})"></td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td></td><td></td><td></td>
+  </tr>
+  {% endfor %}
+</table>
+<div class = "readyBox">
+  Please check if ready:<br><br>
+  <input type="checkbox" onclick="toggleReady()"></checkbox>
+</div>
+{% endif %}
+</div>

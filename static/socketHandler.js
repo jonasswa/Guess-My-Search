@@ -92,7 +92,7 @@ socket.on('supply_End', function(args){
 
 });
 
-socket.on('vote_End', function (args) {
+socket.on('vote_End', function () {
 
   socket.emit('submit_favorite', favoriteAutocomplete);
 

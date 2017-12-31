@@ -7,7 +7,7 @@ from random import shuffle
 class Autocomplete:
 
     def __init__(self, autocomplete, playerObject = None, ID = 0):
-        self.autocomplete = autocomplete
+        self.autocompleteString = autocomplete
         self.playerObject = playerObject
         self.votes = 0
         self.isGoogle = False
@@ -15,6 +15,9 @@ class Autocomplete:
 
         if (not self.playerObject):
             self.isGoogle = True
+
+    def get_Autocomplete_and_ID(self):
+        return (str(self.autocompleteString) + str(self.ID))
 
 class Entry:
 
@@ -27,7 +30,7 @@ class Entry:
         self.autocompletes = []
 
         self.autocompletes.append(Autocomplete(autocomplete, playerObject, 0))
-        self.autocompletes.append(Autocomplete(getAutoComplete(search_input=searchString), None, 1))
+        self.autocompletes.append(Autocomplete(getAutoComplete(search_input=searchString)[0], None, 1))
 
 
     def add_Autocomplete(self, autocomplete, playerObject):
@@ -42,19 +45,21 @@ class Entry:
 
         return None
 
-    def get_All_Autocompletes_ID(self):
+    def get_All_Autocompletes_ID(self, playerObject):
         '''
         Function for getting search string as well as autocompeltes
         in a list
-        ret = ["Search String", "autocomplete2", "autocomplete1", ...]
+        ret = ["Search StringID", "autocomplete2", "autocomplete1", ...]
         '''
         ret = []
-        #ret.append(self.searchString)
+
         for a in self.autocompletes:
-            ret.append(a.autocomplete+str(a.ID))
+            if a.playerObject == playerObject:
+                continue
+            ret.append(a.get_Autocomplete_and_ID())
 
         shuffle(ret)
-        ret.insert(0, self.searchString)
+        ret.insert(0, (self.searchString+str(self.ID)))
 
         return ret
 
@@ -152,6 +157,25 @@ class Game:
                 self.voteEnd = True
                 self.go_To_Next_Stage()
                 return
+
+    def get_Vote_Entries(self, playerObject):
+        ret = []
+
+        for entry in self.entries:
+            if entry.playerObject == playerObject:
+                continue
+            ret.append(entry.get_All_Autocompletes_ID(playerObject))
+
+        return ret
+
+    def get_Autocomlete_by_ID(self, ID):
+        '''
+        The ID should be a string defined by the search_string_ID and the
+        autocomplete_ID:
+
+        searchStringID_autocompleteID
+
+        '''
 
 
     def get_Stage(self):
